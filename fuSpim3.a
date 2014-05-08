@@ -1,0 +1,130 @@
+#----------------------------------------------------------------------------#
+# fuSpim3.a
+# Hao Fu
+# Description: a spim program that get user input about the number of Fibonacci numbers, and print out
+#				the Fibonacci numbers in the defined length, along with the sum of the sequence.
+# 				The program is written in recursion.
+# Input:   	    an integer n, which stands for the size of Fibonacci sequence. 0<=n<=44
+#
+# Output:  		The output is aFibonacci sequence, one value per line, displaed in reverse order. 
+# 				Below this, the sum of the sequence is also shown. 
+#
+#
+#
+#----------------------------------------------------------------------------#
+			
+			.data
+prompt:		.asciiz "Enter a non-negative integer, samller than 45: "
+print0: 	.asciiz "The sum is: 0"
+print1:		.asciiz "The Fibonacci number is: \n1 \nThe sum is: 1"
+fibSeq: 	.asciiz "\nThe Fibonacci sequence is: \n"
+newline: 	.asciiz "\n"
+fibSum: 	.asciiz "\nThe sum of the Fibonacci sequence is: "
+#----------------------------------------------------------------------------#
+			.text
+			.globl main
+main:		
+ 			la $a0, prompt
+ 			li $v0, 4
+ 			syscall    				#Prompt for Int
+
+ 			li $v0, 5
+ 			syscall    				#Response
+ 			move $a0, $v0  			#Move n to the $a0 register
+
+ 			li $a1, 2				# a1 = sum
+ 			li $a2, 1 				# a2 = x
+ 			li $a3, 1 				# a3 = y
+
+ 			addi $t0, $zero, 1 		#set t0 to 1
+ 			beq $a0, $zero, fib0	#go to return 0 if n = 0
+ 			beq $a0, $t0, fib1		#go to return 1 if n = 1
+ 			jr fib 					#other wise, go to fib
+
+ 			j done
+
+# print out when user input is 0
+fib0:
+			la $a0, print0 			
+			li $v0, 4
+			syscall
+			j done
+
+# print out when user input is 1
+fib1:
+			la $a0, print1
+			li $v0, 4
+			syscall
+			j done
+
+fib:
+
+			addi $t1, $zero, 1 		#t1 = 1
+			bne $a0, $t1, fibCalc 	#check if the counter has reached to 1
+
+			lw $t4, 16($sp) 		#t4 = y
+
+			li $v0, 4 				#print out the sum string
+			la $a0, fibSum
+			syscall
+			
+			addi $a1, $a1, -1 		#adjust sum by decrement it by 1
+
+			li $v0, 1 				#print out sum
+			move $a0, $a1 
+			syscall
+
+			li $v0, 4 				#print out the sequence string
+			la $a0, fibSeq
+			syscall
+
+			li $v0, 1 				#print out y, the last number in the Fibonacci sequence 
+			move $a0, $t4
+			syscall 
+
+			li $v0, 4
+			la $a0, newline
+			syscall
+
+			jr $ra
+
+fibCalc:
+			# free stack space
+			addi $sp, $sp, -24  	# make room for 6 elements in stack
+			sw $ra, 0($sp) 			# save return address
+			sw $a0, 4($sp)			# save n
+			sw $a1, 8($sp)			# save sum
+			sw $a2, 12($sp)  		# save x
+			sw $a3, 16($sp) 		# save y
+
+			# do the calculations
+			addi $a0, $a0, -1 		#decrement n
+			add $a1, $a1, $a3 		#sum = sum + y
+			move $t2, $a2 			#store x in a temporary register
+			move $a2, $a3			#x = y
+			add $a3, $t2, $a3 		#y = x(original value)+y
+
+			jal fib 				#recurse for fib(sum,n,x,y)
+			sw $v0, 20($sp)  		#Save value of fib(sum,n,x,y)
+
+			lw $t4, 12($sp) 		# t4 = x
+			li $v0, 1 				
+			move $a0, $t4 			# print out x
+			syscall
+
+			li $v0, 4
+			la $a0, newline
+			syscall
+
+			# restore from stack 
+			lw $ra 0($sp) 			#load the return address
+			#lw $t3, 20($sp)		#load (fib(sum,n,x,y))
+			addi $sp, $sp, 24  		#free up 6 elements on stack
+
+			jr $ra
+
+done:
+
+ 			li $v0, 10   			#Exit Program
+ 			syscall
+
